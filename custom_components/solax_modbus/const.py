@@ -1,6 +1,6 @@
 import logging
 import pathlib
-from collections.abc import Callable, Sequence
+from collections.abc import Awaitable, Callable, Sequence
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -14,24 +14,7 @@ from homeassistant.components.sensor import SensorEntityDescription
 from homeassistant.components.switch import SwitchEntityDescription
 from homeassistant.components.time import TimeEntityDescription
 from homeassistant.const import CONF_SCAN_INTERVAL
-
-# TODO: Review if this fallback is still needed.
-# UnitOfReactivePower was added in HA 2023.1 (Jan 2023). This fallback supports
-# HA versions older than 2023.1. Consider adding a minimum HA version to manifest.json
-# and removing this fallback if older versions are no longer supported.
-# See: https://developers.home-assistant.io/blog/2022/12/05/more-unit-enumerators
-try:
-    from homeassistant.const import (
-        UnitOfReactivePower,
-    )
-except ImportError:
-    from homeassistant.const import POWER_VOLT_AMPERE_REACTIVE
-
-    class UnitOfReactivePower(StrEnum):  # type: ignore[no-redef]
-        """Fallback for HA versions <2023.1."""
-
-        VOLT_AMPERE_REACTIVE = POWER_VOLT_AMPERE_REACTIVE
-
+from homeassistant.const import UnitOfReactivePower as UnitOfReactivePower  # Re-export for the inverter plugins.
 
 # ================================= Definitions for config_flow ==========================================================
 
@@ -62,6 +45,7 @@ CONF_BAUDRATE = "baudrate"
 CONF_PLUGIN = "plugin"
 CONF_READ_BATTERY = "read_battery"
 CONF_CORE_HUB = "read_core_hub"
+CONF_CORE_CONNECTION = "core_connection"
 CONF_ENERGY_DASHBOARD_DEVICE = "energy_dashboard_device"
 CONF_DEBUG_SETTINGS = "debug_settings"
 ATTR_MANUFACTURER = "SolaX Power"
@@ -279,17 +263,45 @@ class BaseModbusSensorEntityDescription(SensorEntityDescription):
     # The name and key must contain a placeholder {} that is replaced by the preceding number
     min_value: int | None = None
     max_value: int | None = None
-    # Possible register keys required by the value function. On partial polls,
-    # computed sensors are only recalculated when every active dependency is fresh.
+    # Input contract for register-less computed sensors. ``depends_on`` contains
+    # mandatory inputs, ``depends_on_any`` contains alternative groups where at
+    # least one input must be available, and ``optional_depends_on`` contains
+    # inputs used only when valid and fresh, otherwise omitted. An explicit empty
+    # ``depends_on`` declares a calculation with no readiness inputs or expiry,
+    # provided no other input contract or special source mapping exists. ``None``
+    # means that the contract was not declared and the calculation is rejected.
     depends_on: list[str] | None = None
+    depends_on_any: list[tuple[str, ...]] | None = None
+    optional_depends_on: list[str] | None = None
+    readiness_validator: Callable[[dict[str, Any]], bool] | None = None
+    dependency_selector: Callable[[dict[str, Any], set[str]], tuple[set[str], set[str]]] | None = None
+    recompute_each_poll: bool = False
+    allow_none: bool = False  # Explicit unknown output, never a numeric zero.
     _energy_dashboard_device_info: Any = None  # DeviceInfo for energy dashboard
     _energy_dashboard_mapping: Any = None  # EnergyDashboardMapping
     _energy_dashboard_source_hub: Any = None  # Source hub reference
+    _energy_dashboard_source_hubs: tuple[Any, ...] | None = None  # All contributors to an aggregate
     _is_riemann_sum_sensor: bool = False  # Whether this is a Riemann sum sensor
     _riemann_mapping: Any = None  # Riemann mapping configuration
     _riemann_data_hub: Any = None  # Riemann data hub reference
     _is_daily_delta_sensor: bool = False  # Whether this is a daily delta sensor calculated from a cumulative total
     _daily_delta_source_key: str | None = None  # Source cumulative total key for daily delta sensors
+
+
+def is_inputless_computed_sensor(description: Any) -> bool:
+    """Only an explicit empty input contract exempts a computation from expiry."""
+    return (
+        getattr(description, "register", -1) < 0
+        and bool(getattr(description, "value_function", None))
+        and getattr(description, "depends_on", None) == []
+        and not getattr(description, "optional_depends_on", None)
+        and not getattr(description, "depends_on_any", None)
+        and getattr(description, "dependency_selector", None) is None
+        and getattr(description, "readiness_validator", None) is None
+        and getattr(description, "_energy_dashboard_mapping", None) is None
+        and not getattr(description, "_is_riemann_sum_sensor", False)
+        and not getattr(description, "_is_daily_delta_sensor", False)
+    )
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -305,6 +317,11 @@ class BaseModbusButtonEntityDescription(ButtonEntityDescription):
     write_method: int = WRITE_SINGLE_MODBUS  # WRITE_SINGLE_MOBUS or WRITE_MULTI_MODBUS or WRITE_DATA_LOCAL
     value_function: Callable[[Any, Any, dict[str, Any]], Any] | None = None  #  value = function(initval, descr, datadict)
     autorepeat: str | None = None  # if not None: name of entity that contains autorepeat duration in seconds
+    autorepeat_dependencies: tuple[str, ...] | None = None  # Required model inputs, regardless of control sub-mode
+    autorepeat_optional_dependencies: tuple[str, ...] = ()  # Only valid accepted inputs reach the controller
+    autorepeat_control: str | None = None  # Local mode request; explicit Disabled bypasses the input gate
+    autorepeat_parallel_dependencies: dict[str, tuple[str, ...]] | None = None  # Fixed inputs for each supported topology
+    autorepeat_cadence: tuple[str, ...] = ()
     depends_on: list[str] | None = None  # list of modbus register keys that must be read
 
 
@@ -328,6 +345,8 @@ class BaseModbusSelectEntityDescription(SelectEntityDescription):
     depends_on: list[str] | None = None  # list of modbus register keys that must be read
     value_function: Callable[[Any, Any, dict[str, Any]], Any] | None = None  # value function for autorepeat (same pattern as buttons)
     autorepeat: bool = False  # if True: select will use value_function for autorepeat
+    # Optional transactional writer: (hub, unit, description, raw value). Must raise on failure.
+    async_write_function: Callable[[Any, int, Any, int | float], Awaitable[None]] | None = None
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -411,6 +430,8 @@ class BaseModbusNumberEntityDescription(NumberEntityDescription):
     depends_on: list[str] | None = None  # list of modbus register keys that must be read
     display_as_box: bool = True  # display numbers as an input box (default); set False for a slider.
     suggested_display_precision: int | None = None
+    # Optional transactional writer: (hub, unit, description, raw value). Must raise on failure.
+    async_write_function: Callable[[Any, int, Any, int | float], Awaitable[None]] | None = None
 
 
 def modbus_protocol_version(hub: Any) -> int:
@@ -527,19 +548,23 @@ def value_function_battery_input(initval: Any, descr: Any, datadict: dict[str, A
     return 0
 
 
-def value_function_battery_output_solis(initval: Any, descr: Any, datadict: dict[str, Any]) -> int | float:
+def value_function_battery_output_solis(initval: Any, descr: Any, datadict: dict[str, Any]) -> int | float | None:
     """Calculate battery output power for Solis inverters."""
-    inout: int = datadict.get("battery_charge_direction", 0)
-    val: int | float = datadict.get("battery_power", 0)
+    inout = datadict.get("battery_charge_direction")
+    val: int | float | None = datadict.get("battery_power")
+    if inout not in (0, 1) or val is None:
+        return None
     if inout == 1:
         return abs(val)
     return 0
 
 
-def value_function_battery_input_solis(initval: Any, descr: Any, datadict: dict[str, Any]) -> int | float:
+def value_function_battery_input_solis(initval: Any, descr: Any, datadict: dict[str, Any]) -> int | float | None:
     """Calculate battery input power for Solis inverters."""
-    inout: int = datadict.get("battery_charge_direction", 0)
-    val: int | float = datadict.get("battery_power", 0)
+    inout = datadict.get("battery_charge_direction")
+    val: int | float | None = datadict.get("battery_power")
+    if inout not in (0, 1) or val is None:
+        return None
     if inout == 0:
         return val
     return 0

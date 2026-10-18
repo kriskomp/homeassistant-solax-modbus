@@ -19,7 +19,7 @@ from homeassistant.helpers.entity import (  # type: ignore[attr-defined]
     EntityCategory,
 )
 
-from custom_components.solax_modbus.const import (  # type: ignore[attr-defined]
+from custom_components.solax_modbus.const import (
     CONF_READ_DCB,
     CONF_READ_EPS,
     DEFAULT_READ_DCB,
@@ -1241,6 +1241,7 @@ SENSOR_TYPES: list[SolisModbusSensorEntityDescription] = [
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
         value_function=value_function_pv1_power,
+        depends_on=["pv_voltage_1", "pv_current_1"],
         allowedtypes=HYBRID,
         icon="mdi:solar-power-variant",
     ),
@@ -1276,6 +1277,7 @@ SENSOR_TYPES: list[SolisModbusSensorEntityDescription] = [
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
         value_function=value_function_pv2_power,
+        depends_on=["pv_voltage_2", "pv_current_2"],
         allowedtypes=HYBRID,
         icon="mdi:solar-power-variant",
     ),
@@ -1311,6 +1313,7 @@ SENSOR_TYPES: list[SolisModbusSensorEntityDescription] = [
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
         value_function=value_function_pv3_power,
+        depends_on=["pv_voltage_3", "pv_current_3"],
         allowedtypes=HYBRID | MPPT4 | MPPT3,
         icon="mdi:solar-power-variant",
     ),
@@ -1346,6 +1349,7 @@ SENSOR_TYPES: list[SolisModbusSensorEntityDescription] = [
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
         value_function=value_function_pv4_power,
+        depends_on=["pv_voltage_4", "pv_current_4"],
         allowedtypes=HYBRID | MPPT4,
         icon="mdi:solar-power-variant",
     ),
