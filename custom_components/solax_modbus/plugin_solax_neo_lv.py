@@ -34,6 +34,7 @@ compare against the live SolaX app and adjust the affected `register=` value.
 """
 
 import logging
+import time
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
@@ -72,6 +73,56 @@ from custom_components.solax_modbus.const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Guard for cumulative 32-bit energy counters (e.g. PV Energy Yield Total).
+#
+# Several Modbus masters talking to one gateway can produce garbled frames that
+# still decode as a valid-looking (but absurd) 32-bit counter value. Home
+# Assistant would record such a jump as real energy (total_increasing), which
+# permanently inflates the Energy dashboard. The guard keeps the last accepted
+# value whenever a counter decreases or grows faster than physically possible.
+# A new baseline is accepted only after several consecutive, mutually
+# consistent reads (so a genuine counter reset, or a bad first read after a
+# restart, can never leave the sensor stuck).
+# ---------------------------------------------------------------------------
+_ALWAYS_AWAKE = True  # set to False to restore the original run_mode based isAwake()
+_ENERGY_GUARD_MAX_KW = 40.0  # fastest plausible energy rate; far above the 12 kW inverter
+_ENERGY_GUARD_SLACK_KWH = 1.0  # tolerance added on top of the rate-based limit
+_ENERGY_GUARD_CONFIRM_READS = 3  # consistent reads needed to adopt a new baseline
+
+
+def _energy_counter_guard(state: dict[str, Any], key: str, raw: int, scale: float, now: float) -> int:
+    """Return the raw counter value to use (the input, or the last accepted one)."""
+    entry = state.get(key)
+    if entry is None:
+        state[key] = {"raw": raw, "t": now, "cand": None, "cand_t": now, "cand_n": 0}
+        return raw
+
+    last_raw = entry["raw"]
+    allowed = (_ENERGY_GUARD_SLACK_KWH + _ENERGY_GUARD_MAX_KW * max(now - entry["t"], 0.0) / 3600.0) / scale
+    if last_raw <= raw <= last_raw + allowed:
+        entry.update(raw=raw, t=now, cand=None, cand_n=0)
+        return raw
+
+    # Suspicious value: decreased, or grew faster than physically possible.
+    cand = entry["cand"]
+    cand_allowed = (_ENERGY_GUARD_SLACK_KWH + _ENERGY_GUARD_MAX_KW * max(now - entry["cand_t"], 0.0) / 3600.0) / scale
+    if cand is not None and cand <= raw <= cand + cand_allowed:
+        entry["cand"], entry["cand_t"] = raw, now
+        entry["cand_n"] += 1
+    else:
+        entry["cand"], entry["cand_t"], entry["cand_n"] = raw, now, 1
+
+    if entry["cand_n"] >= _ENERGY_GUARD_CONFIRM_READS:
+        _LOGGER.warning("Energy counter %s: adopting new baseline %s after %s consistent reads (was %s)", key, raw, entry["cand_n"], last_raw)
+        entry.update(raw=raw, t=now, cand=None, cand_n=0)
+        return raw
+
+    if entry["cand_n"] == 1:
+        _LOGGER.warning("Energy counter %s: ignoring implausible value %s (last accepted %s)", key, raw, last_raw)
+    return last_raw
 
 
 # =====================================================================================
@@ -2612,8 +2663,34 @@ SELECT_TYPES: Sequence["SolaxNeoLVSelectEntityDescription"] = [
 
 @dataclass(kw_only=True)
 class solax_x3_neo_lv_plugin(plugin_base):
+    def validate_register_data(self, descr: Any, value: Any, datadict: dict[str, Any]) -> Any:
+        """Hook called by the hub for every decoded register value (before scaling).
+
+        Only cumulative 32-bit energy counters are touched; everything else is
+        passed through unchanged. Any unexpected problem falls back to the
+        original value, so this can never break reading.
+        """
+        try:
+            if (
+                isinstance(value, int)
+                and not isinstance(value, bool)
+                and getattr(descr, "register_data_type", None) == REGISTER_U32
+                and getattr(descr, "device_class", None) == SensorDeviceClass.ENERGY
+                and not getattr(descr, "internal", False)
+            ):
+                scale = descr.scale if isinstance(descr.scale, (int, float)) and descr.scale > 0 else 0.1
+                state = self.__dict__.setdefault("_energy_guard_state", {})
+                return _energy_counter_guard(state, descr.key, value, float(scale), time.monotonic())
+        except Exception:
+            _LOGGER.debug("energy counter guard failed for %s - using raw value", getattr(descr, "key", "?"), exc_info=True)
+        return value
+
     def isAwake(self, datadict: dict[str, Any]) -> bool:
         """Consider the inverter awake whenever it isn't sitting in WaitMode."""
+        # Modbus keeps answering with System Switch Off and there is no wake-up button,
+        # so don't gate writes on run_mode (avoids "cannot wakeup inverter" warning).
+        if _ALWAYS_AWAKE:
+            return True
         run_mode = datadict.get("run_mode", None)
         return run_mode is not None and run_mode != "WaitMode"
 
