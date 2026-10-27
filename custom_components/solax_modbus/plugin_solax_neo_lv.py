@@ -8,6 +8,11 @@ Scope of this file (intentional, see notes below):
   * SENSOR_TYPES: full coverage of section 3.3 (real-time data, function code 0x04)
     plus the most useful read-only diagnostic sensors from section 3.4
     (configuration parameters, function code 0x03 - READ ONLY here).
+  * Battery system rating read from the undocumented holding registers
+    0x011A/0x011B (Ah, 0.1 V), plus the computed "Battery System Installed
+    Capacity" and "Remaining Battery Energy" (same keys/units as plugin_solax.py).
+  * validate_register_data(): module-level hook guarding lifetime kWh energy
+    counters against garbled 32-bit reads (see the guard section below).
   * NUMBER_TYPES / SELECT_TYPES / SWITCH_TYPES / BUTTON_TYPES are intentionally
     left EMPTY in this version. Writing to this inverter's holding registers
     (work mode, charge/discharge limits, protection thresholds, ...) is only
@@ -124,6 +129,51 @@ def _energy_counter_guard(state: dict[str, Any], key: str, raw: int, scale: floa
     return last_raw
 
 
+def _validation_cache(datadict: dict[str, Any], key: str) -> dict[str, Any]:
+    """Return a per-hub cache stored inside the hub data dict (same pattern as plugin_solax.py)."""
+    cache = datadict.get("_validation_cache")
+    if not isinstance(cache, dict):
+        cache = {}
+        datadict["_validation_cache"] = cache
+    scoped = cache.get(key)
+    if not isinstance(scoped, dict):
+        scoped = {}
+        cache[key] = scoped
+    return scoped
+
+
+def validate_register_data(descr: Any, value: Any, datadict: dict[str, Any]) -> Any:
+    """Plugin-level validation hook, called by the hub for every decoded register value (before scaling).
+
+    The hub looks this function up on the plugin MODULE
+    (``getattr(plugin_module, "validate_register_data")``), so it must be a
+    module-level function - a method on the plugin class is never called.
+
+    Only lifetime energy counters are guarded: 32-bit, ``total_increasing``, in kWh.
+    Daily counters (``*_today``, state_class ``total``) legitimately drop to zero
+    at midnight and ``battery_energy_throughput`` is reported in Wh, so both are
+    deliberately left out. Everything else is passed through unchanged, and any
+    unexpected problem falls back to the original value, so this can never break
+    reading.
+    """
+    try:
+        if (
+            isinstance(value, int)
+            and not isinstance(value, bool)
+            and getattr(descr, "register_data_type", None) == REGISTER_U32
+            and getattr(descr, "device_class", None) == SensorDeviceClass.ENERGY
+            and getattr(descr, "state_class", None) == SensorStateClass.TOTAL_INCREASING
+            and getattr(descr, "native_unit_of_measurement", None) == UnitOfEnergy.KILO_WATT_HOUR
+            and not getattr(descr, "internal", False)
+        ):
+            scale = descr.scale if isinstance(descr.scale, (int, float)) and descr.scale > 0 else 0.1
+            state = _validation_cache(datadict, "energy_counter_guard")
+            return _energy_counter_guard(state, descr.key, value, float(scale), time.monotonic())
+    except Exception:
+        _LOGGER.debug("energy counter guard failed for %s - using raw value", getattr(descr, "key", "?"), exc_info=True)
+    return value
+
+
 # =====================================================================================
 # This plugin targets exactly one product line (X3-NEO-LV), so unlike
 # plugin_solax_lv.py there is no need for the multi-generation GEN/X1/X3/...
@@ -179,6 +229,42 @@ def _byte_lo(initval: int, descr: Any, datadict: dict[str, Any]) -> int:
 def _byte_hi(initval: int, descr: Any, datadict: dict[str, Any]) -> int:
     """Extract the high byte of a 16-bit register (doc: 'Uint8(Hi)', second-named field)."""
     return (int(initval) >> 8) & 0xFF
+
+
+def _installed_capacity_wh(datadict: dict[str, Any]) -> float | None:
+    """Rated capacity (Ah) x rated voltage (V) -> Wh, or None while either input is missing/zero."""
+    try:
+        capacity_ah = float(datadict.get("battery_rated_capacity") or 0)
+        voltage_v = float(datadict.get("battery_rated_voltage") or 0)
+    except (TypeError, ValueError):
+        return None
+    if capacity_ah <= 0 or voltage_v <= 0:
+        return None
+    return capacity_ah * voltage_v
+
+
+def _value_function_battery_installed_capacity(initval: int, descr: Any, datadict: dict[str, Any]) -> int | None:
+    wh = _installed_capacity_wh(datadict)
+    return None if wh is None else round(wh)
+
+
+def _value_function_remaining_battery_capacity(initval: int, descr: Any, datadict: dict[str, Any]) -> int | None:
+    """Rated capacity x SOC, like value_function_remaining_battery_capacity in plugin_solax.py.
+
+    SOH is deliberately not applied (the BMS reports 0 for it), so after capacity
+    fade this overestimates the real remaining energy - it is an approximation.
+    """
+    wh = _installed_capacity_wh(datadict)
+    raw_soc = datadict.get("battery_soc")
+    if raw_soc is None:
+        return None
+    try:
+        soc = float(raw_soc)
+    except (TypeError, ValueError):
+        return None
+    if wh is None or not 0 <= soc <= 100:
+        return None
+    return round(wh * soc / 100.0)
 
 
 _BATTERY_STATUS_MAP = {
@@ -1553,6 +1639,56 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
         internal=True,
     ),
+    # ---------------------------------------------------------------------------
+    # Battery system rating (holding 0x011A/0x011B - NOT in the V1.30 document).
+    # Found by scanning a real X3-NEO-LV with an LFP pack: 0x011A = 628 (Ah) and
+    # 0x011B = 512 (0.1 V -> 51.2 V), i.e. 32 154 Wh - matching the installed pack.
+    # Both stayed constant during a monitored discharge, and a coulomb/energy
+    # count over 89 -> 79 % SOC (about 0.322 kWh per 1 %) agrees with them.
+    # Not to be confused with 0x003F "Battery Rated Capacity (Lead-acid)", which
+    # is the lead-acid setting and is unrelated to the LFP pack.
+    # Read only - never written.
+    # ---------------------------------------------------------------------------
+    SolaxNeoLVSensorEntityDescription(
+        name="Battery Rated Capacity",
+        key="battery_rated_capacity",
+        register=0x011A,
+        register_type=REG_HOLDING,
+        native_unit_of_measurement="Ah",
+        icon="mdi:battery-high",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    SolaxNeoLVSensorEntityDescription(
+        name="Battery Rated Voltage",
+        key="battery_rated_voltage",
+        register=0x011B,
+        register_type=REG_HOLDING,
+        scale=0.1,
+        rounding=1,
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        device_class=SensorDeviceClass.VOLTAGE,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    # Computed - same names, keys and units as the Gen4-6 entities in plugin_solax.py.
+    SolaxNeoLVSensorEntityDescription(
+        name="Battery System Installed Capacity",
+        key="battery_system_installed_capacity",
+        value_function=_value_function_battery_installed_capacity,
+        depends_on=["battery_rated_capacity", "battery_rated_voltage"],
+        native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
+        device_class=SensorDeviceClass.ENERGY,
+        icon="mdi:battery",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    SolaxNeoLVSensorEntityDescription(
+        name="Remaining Battery Energy",
+        key="remaining_battery_capacity",
+        value_function=_value_function_remaining_battery_capacity,
+        depends_on=["battery_rated_capacity", "battery_rated_voltage", "battery_soc"],
+        native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
+        device_class=SensorDeviceClass.ENERGY_STORAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
 ]
 
 # ================================= Empty lists (see module docstring) ===============
@@ -2662,28 +2798,6 @@ SELECT_TYPES: Sequence["SolaxNeoLVSelectEntityDescription"] = [
 
 @dataclass(kw_only=True)
 class solax_x3_neo_lv_plugin(plugin_base):
-    def validate_register_data(self, descr: Any, value: Any, datadict: dict[str, Any]) -> Any:
-        """Hook called by the hub for every decoded register value (before scaling).
-
-        Only cumulative 32-bit energy counters are touched; everything else is
-        passed through unchanged. Any unexpected problem falls back to the
-        original value, so this can never break reading.
-        """
-        try:
-            if (
-                isinstance(value, int)
-                and not isinstance(value, bool)
-                and getattr(descr, "register_data_type", None) == REGISTER_U32
-                and getattr(descr, "device_class", None) == SensorDeviceClass.ENERGY
-                and not getattr(descr, "internal", False)
-            ):
-                scale = descr.scale if isinstance(descr.scale, (int, float)) and descr.scale > 0 else 0.1
-                state = self.__dict__.setdefault("_energy_guard_state", {})
-                return _energy_counter_guard(state, descr.key, value, float(scale), time.monotonic())
-        except Exception:
-            _LOGGER.debug("energy counter guard failed for %s - using raw value", getattr(descr, "key", "?"), exc_info=True)
-        return value
-
     def isAwake(self, datadict: dict[str, Any]) -> bool:
         """Consider the inverter awake whenever it isn't sitting in WaitMode."""
         # Modbus keeps answering with System Switch Off and there is no wake-up button,
