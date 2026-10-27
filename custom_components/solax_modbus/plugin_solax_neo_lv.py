@@ -334,8 +334,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
     # 3.3.3 Get Inverter-Grid Port Info
     # ---------------------------------------------------------------------------
     SolaxNeoLVSensorEntityDescription(
-        name="Grid A Voltage",
-        key="grid_a_voltage",
+        name="Grid Voltage L1",  # vendor: Grid A Voltage
+        key="grid_voltage_l1",
         register=0x0000,
         scale=0.1,
         rounding=1,
@@ -344,8 +344,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         state_class=SensorStateClass.MEASUREMENT,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="Grid B Voltage",
-        key="grid_b_voltage",
+        name="Grid Voltage L2",  # vendor: Grid B Voltage
+        key="grid_voltage_l2",
         register=0x0001,
         scale=0.1,
         rounding=1,
@@ -354,8 +354,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         state_class=SensorStateClass.MEASUREMENT,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="Grid C Voltage",
-        key="grid_c_voltage",
+        name="Grid Voltage L3",  # vendor: Grid C Voltage
+        key="grid_voltage_l3",
         register=0x0002,
         scale=0.1,
         rounding=1,
@@ -364,8 +364,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         state_class=SensorStateClass.MEASUREMENT,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="Grid A Current",
-        key="grid_a_current",
+        name="Grid Current L1",  # vendor: Grid A Current
+        key="grid_current_l1",
         register=0x0003,
         register_data_type=REGISTER_S16,
         scale=0.1,
@@ -375,8 +375,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         state_class=SensorStateClass.MEASUREMENT,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="Grid B Current",
-        key="grid_b_current",
+        name="Grid Current L2",  # vendor: Grid B Current
+        key="grid_current_l2",
         register=0x0004,
         register_data_type=REGISTER_S16,
         scale=0.1,
@@ -386,8 +386,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         state_class=SensorStateClass.MEASUREMENT,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="Grid C Current",
-        key="grid_c_current",
+        name="Grid Current L3",  # vendor: Grid C Current
+        key="grid_current_l3",
         register=0x0005,
         register_data_type=REGISTER_S16,
         scale=0.1,
@@ -417,8 +417,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="Grid A Power",
-        key="grid_a_power",
+        name="Grid Power L1",  # vendor: Grid A Power
+        key="grid_power_l1",
         register=0x0008,
         register_data_type=REGISTER_S16,
         native_unit_of_measurement=UnitOfPower.WATT,
@@ -426,8 +426,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         state_class=SensorStateClass.MEASUREMENT,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="Grid B Power",
-        key="grid_b_power",
+        name="Grid Power L2",  # vendor: Grid B Power
+        key="grid_power_l2",
         register=0x0009,
         register_data_type=REGISTER_S16,
         native_unit_of_measurement=UnitOfPower.WATT,
@@ -435,8 +435,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         state_class=SensorStateClass.MEASUREMENT,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="Grid C Power",
-        key="grid_c_power",
+        name="Grid Power L3",  # vendor: Grid C Power
+        key="grid_power_l3",
         register=0x000A,
         register_data_type=REGISTER_S16,
         native_unit_of_measurement=UnitOfPower.WATT,
@@ -639,8 +639,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
     # 3.3.6 Get Inverter-EPS Port Info
     # ---------------------------------------------------------------------------
     SolaxNeoLVSensorEntityDescription(
-        name="EPS A Voltage",
-        key="eps_a_voltage",
+        name="EPS Voltage L1",  # vendor: EPS A Voltage
+        key="eps_voltage_l1",
         register=0x0013,
         scale=0.1,
         rounding=1,
@@ -650,8 +650,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="EPS B Voltage",
-        key="eps_b_voltage",
+        name="EPS Voltage L2",  # vendor: EPS B Voltage
+        key="eps_voltage_l2",
         register=0x0014,
         scale=0.1,
         rounding=1,
@@ -661,8 +661,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="EPS C Voltage",
-        key="eps_c_voltage",
+        name="EPS Voltage L3",  # vendor: EPS C Voltage
+        key="eps_voltage_l3",
         register=0x0015,
         scale=0.1,
         rounding=1,
@@ -672,8 +672,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="EPS A Current",
-        key="eps_a_current",
+        name="EPS Current L1",  # vendor: EPS A Current
+        key="eps_current_l1",
         register=0x0016,
         register_data_type=REGISTER_S16,
         scale=0.1,
@@ -684,8 +684,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="EPS B Current",
-        key="eps_b_current",
+        name="EPS Current L2",  # vendor: EPS B Current
+        key="eps_current_l2",
         register=0x0017,
         register_data_type=REGISTER_S16,
         scale=0.1,
@@ -696,8 +696,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="EPS C Current",
-        key="eps_c_current",
+        name="EPS Current L3",  # vendor: EPS C Current
+        key="eps_current_l3",
         register=0x0018,
         register_data_type=REGISTER_S16,
         scale=0.1,
@@ -718,8 +718,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="EPS A Power",
-        key="eps_a_power",
+        name="EPS Power L1",  # vendor: EPS A Power
+        key="eps_power_l1",
         register=0x001A,
         register_data_type=REGISTER_S16,
         native_unit_of_measurement=UnitOfPower.WATT,
@@ -727,8 +727,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         state_class=SensorStateClass.MEASUREMENT,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="EPS B Power",
-        key="eps_b_power",
+        name="EPS Power L2",  # vendor: EPS B Power
+        key="eps_power_l2",
         register=0x001B,
         register_data_type=REGISTER_S16,
         native_unit_of_measurement=UnitOfPower.WATT,
@@ -736,8 +736,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         state_class=SensorStateClass.MEASUREMENT,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="EPS C Power",
-        key="eps_c_power",
+        name="EPS Power L3",  # vendor: EPS C Power
+        key="eps_power_l3",
         register=0x001C,
         register_data_type=REGISTER_S16,
         native_unit_of_measurement=UnitOfPower.WATT,
@@ -745,8 +745,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         state_class=SensorStateClass.MEASUREMENT,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="EPS A Apparent Power",
-        key="eps_a_power_s",
+        name="EPS Apparent Power L1",  # vendor: EPS A Apparent Power
+        key="eps_apparent_power_l1",
         register=0x001D,
         register_data_type=REGISTER_S16,
         native_unit_of_measurement=UnitOfPower.WATT,
@@ -754,8 +754,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="EPS B Apparent Power",
-        key="eps_b_power_s",
+        name="EPS Apparent Power L2",  # vendor: EPS B Apparent Power
+        key="eps_apparent_power_l2",
         register=0x001E,
         register_data_type=REGISTER_S16,
         native_unit_of_measurement=UnitOfPower.WATT,
@@ -763,8 +763,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="EPS C Apparent Power",
-        key="eps_c_power_s",
+        name="EPS Apparent Power L3",  # vendor: EPS C Apparent Power
+        key="eps_apparent_power_l3",
         register=0x001F,
         register_data_type=REGISTER_S16,
         native_unit_of_measurement=UnitOfPower.WATT,
@@ -775,8 +775,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
     # 3.3.7 Get Inverter-Output Info
     # ---------------------------------------------------------------------------
     SolaxNeoLVSensorEntityDescription(
-        name="Inverter A Voltage",
-        key="inv_a_voltage",
+        name="Inverter Voltage L1",  # vendor: Inverter A Voltage
+        key="inverter_voltage_l1",
         register=0x002F,
         scale=0.1,
         rounding=1,
@@ -786,8 +786,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="Inverter B Voltage",
-        key="inv_b_voltage",
+        name="Inverter Voltage L2",  # vendor: Inverter B Voltage
+        key="inverter_voltage_l2",
         register=0x0030,
         scale=0.1,
         rounding=1,
@@ -797,8 +797,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="Inverter C Voltage",
-        key="inv_c_voltage",
+        name="Inverter Voltage L3",  # vendor: Inverter C Voltage
+        key="inverter_voltage_l3",
         register=0x0031,
         scale=0.1,
         rounding=1,
@@ -808,8 +808,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="Inverter A Current",
-        key="inv_a_current",
+        name="Inverter Current L1",  # vendor: Inverter A Current
+        key="inverter_current_l1",
         register=0x0032,
         register_data_type=REGISTER_S16,
         scale=0.1,
@@ -820,8 +820,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="Inverter B Current",
-        key="inv_b_current",
+        name="Inverter Current L2",  # vendor: Inverter B Current
+        key="inverter_current_l2",
         register=0x0033,
         register_data_type=REGISTER_S16,
         scale=0.1,
@@ -832,8 +832,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="Inverter C Current",
-        key="inv_c_current",
+        name="Inverter Current L3",  # vendor: Inverter C Current
+        key="inverter_current_l3",
         register=0x0034,
         register_data_type=REGISTER_S16,
         scale=0.1,
@@ -853,8 +853,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         state_class=SensorStateClass.MEASUREMENT,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="Inverter A Frequency",
-        key="inv_a_freq",
+        name="Inverter Frequency L1",  # vendor: Inverter A Frequency
+        key="inverter_frequency_l1",
         register=0x0098,
         scale=0.01,
         rounding=2,
@@ -863,8 +863,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="Inverter B Frequency",
-        key="inv_b_freq",
+        name="Inverter Frequency L2",  # vendor: Inverter B Frequency
+        key="inverter_frequency_l2",
         register=0x0099,
         scale=0.01,
         rounding=2,
@@ -873,8 +873,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="Inverter C Frequency",
-        key="inv_c_freq",
+        name="Inverter Frequency L3",  # vendor: Inverter C Frequency
+        key="inverter_frequency_l3",
         register=0x009A,
         scale=0.01,
         rounding=2,
@@ -894,8 +894,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="Inverter A Power",
-        key="inv_a_power",
+        name="Inverter Power L1",  # vendor: Inverter A Power
+        key="inverter_power_l1",
         register=0x009C,
         register_data_type=REGISTER_S16,
         native_unit_of_measurement=UnitOfPower.WATT,
@@ -904,8 +904,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="Inverter B Power",
-        key="inv_b_power",
+        name="Inverter Power L2",  # vendor: Inverter B Power
+        key="inverter_power_l2",
         register=0x009D,
         register_data_type=REGISTER_S16,
         native_unit_of_measurement=UnitOfPower.WATT,
@@ -914,8 +914,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="Inverter C Power",
-        key="inv_c_power",
+        name="Inverter Power L3",  # vendor: Inverter C Power
+        key="inverter_power_l3",
         register=0x009E,
         register_data_type=REGISTER_S16,
         native_unit_of_measurement=UnitOfPower.WATT,
@@ -933,8 +933,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="Inverter A Apparent Power",
-        key="inv_a_apparent_power",
+        name="Inverter Apparent Power L1",  # vendor: Inverter A Apparent Power
+        key="inverter_apparent_power_l1",
         register=0x00A0,
         register_data_type=REGISTER_S16,
         native_unit_of_measurement=UnitOfPower.WATT,
@@ -942,8 +942,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="Inverter B Apparent Power",
-        key="inv_b_apparent_power",
+        name="Inverter Apparent Power L2",  # vendor: Inverter B Apparent Power
+        key="inverter_apparent_power_l2",
         register=0x00A1,
         register_data_type=REGISTER_S16,
         native_unit_of_measurement=UnitOfPower.WATT,
@@ -951,8 +951,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="Inverter C Apparent Power",
-        key="inv_c_apparent_power",
+        name="Inverter Apparent Power L3",  # vendor: Inverter C Apparent Power
+        key="inverter_apparent_power_l3",
         register=0x00A2,
         register_data_type=REGISTER_S16,
         native_unit_of_measurement=UnitOfPower.WATT,
@@ -963,8 +963,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
     # 3.3.8 Get Inverter-Generator Port Info
     # ---------------------------------------------------------------------------
     SolaxNeoLVSensorEntityDescription(
-        name="Generator A Voltage",
-        key="gen_a_voltage",
+        name="Generator Voltage L1",  # vendor: Generator A Voltage
+        key="generator_voltage_l1",
         register=0x0035,
         scale=0.1,
         rounding=1,
@@ -974,8 +974,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="Generator B Voltage",
-        key="gen_b_voltage",
+        name="Generator Voltage L2",  # vendor: Generator B Voltage
+        key="generator_voltage_l2",
         register=0x0036,
         scale=0.1,
         rounding=1,
@@ -985,8 +985,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="Generator C Voltage",
-        key="gen_c_voltage",
+        name="Generator Voltage L3",  # vendor: Generator C Voltage
+        key="generator_voltage_l3",
         register=0x0037,
         scale=0.1,
         rounding=1,
@@ -996,8 +996,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="Generator A Current",
-        key="gen_a_current",
+        name="Generator Current L1",  # vendor: Generator A Current
+        key="generator_current_l1",
         register=0x0044,
         register_data_type=REGISTER_S16,
         scale=0.1,
@@ -1008,8 +1008,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="Generator B Current",
-        key="gen_b_current",
+        name="Generator Current L2",  # vendor: Generator B Current
+        key="generator_current_l2",
         register=0x0045,
         register_data_type=REGISTER_S16,
         scale=0.1,
@@ -1020,8 +1020,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="Generator C Current",
-        key="gen_c_current",
+        name="Generator Current L3",  # vendor: Generator C Current
+        key="generator_current_l3",
         register=0x0046,
         register_data_type=REGISTER_S16,
         scale=0.1,
@@ -1053,8 +1053,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="Generator A Power",
-        key="gen_a_power",
+        name="Generator Power L1",  # vendor: Generator A Power
+        key="generator_power_l1",
         register=0x00A8,
         register_data_type=REGISTER_S16,
         native_unit_of_measurement=UnitOfPower.WATT,
@@ -1063,8 +1063,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="Generator B Power",
-        key="gen_b_power",
+        name="Generator Power L2",  # vendor: Generator B Power
+        key="generator_power_l2",
         register=0x00A9,
         register_data_type=REGISTER_S16,
         native_unit_of_measurement=UnitOfPower.WATT,
@@ -1073,8 +1073,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="Generator C Power",
-        key="gen_c_power",
+        name="Generator Power L3",  # vendor: Generator C Power
+        key="generator_power_l3",
         register=0x00AA,
         register_data_type=REGISTER_S16,
         native_unit_of_measurement=UnitOfPower.WATT,
@@ -1231,12 +1231,12 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="Battery Health",
-        key="battery_health",
+        name="Battery State of Health",
+        key="battery_soh",
         register=0x008A,
         native_unit_of_measurement=PERCENTAGE,
         entity_category=EntityCategory.DIAGNOSTIC,
-        icon="mdi:heart-pulse",
+        icon="mdi:battery-heart",
     ),
     SolaxNeoLVSensorEntityDescription(
         name="Battery Energy Throughput",
@@ -1249,8 +1249,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="Battery Voltage (Inverter Sampled)",
-        key="bat_voltage_inv",
+        name="Battery Voltage Charge",  # vendor: BatVoltage (Inverter-Sampled Parameters)
+        key="battery_voltage_charge",
         register=0x00A3,
         scale=0.1,
         rounding=1,
@@ -1260,8 +1260,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="Battery Current (Inverter Sampled)",
-        key="bat_current_inv",
+        name="Battery Current Charge",  # vendor: BatCurrent (Inverter-Sampled Parameters)
+        key="battery_current_charge",
         register=0x00A4,
         register_data_type=REGISTER_S16,
         scale=0.1,
@@ -1272,8 +1272,8 @@ SENSOR_TYPES_MAIN: list[SolaxNeoLVSensorEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SolaxNeoLVSensorEntityDescription(
-        name="Battery Power (Inverter Sampled)",
-        key="bat_power_inv",
+        name="Battery Power Charge",  # vendor: BatPower (Inverter-Sampled Parameters)
+        key="battery_power_charge",
         register=0x00A5,
         register_data_type=REGISTER_S16,
         native_unit_of_measurement=UnitOfPower.WATT,
